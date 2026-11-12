@@ -18,11 +18,12 @@ Aplicação de console desenvolvida em C#/.NET 8 para leitura, parsing e anális
 - ✅ Arquitetura MVC (Models, Views, Controllers, Services)
 
 ## 🚀 Como Executar
-
-### Pré-requisitos
+### Executável
+- Ir para o arquivo "README.md" na pasta dist.
+### Execução
+#### Pré-requisitos
 - .NET 8.0 SDK ou superior
 
-### Execução
 ```bash
 # Clone/acesse o diretório do projeto
 cd LogReader
