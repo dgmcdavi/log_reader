@@ -1,0 +1,9 @@
+===== RESUMO DOS LOGS =====
+
+INFO:       2
+WARNING:    1
+ERROR:      1
+
+Entradas válidas:   4
+Entradas inválidas: 2
+Total de linhas:    6

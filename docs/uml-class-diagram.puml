@@ -1,0 +1,145 @@
+@startuml
+
+' Configurações de estilo
+skinparam classAttributeIconSize 0
+skinparam classMethodIconSize 0
+skinparam nodesep 60
+skinparam ranksep 80
+
+' ===================== PACKAGES =====================
+package "LogReader.Models" {
+    class LogEntry {
+        - static Regex LogPattern
+        - Timestamp : DateTime
+        - Level : string
+        - Message : string
+        - IsValid : bool
+        - RawLine : string
+        --
+        + LogEntry() : private
+        + static TryParse(line : string, entry : out LogEntry) : bool
+        + ToString() : string
+    }
+
+    class LogStatistics {
+        - _levelCounts : Dictionary<string, int>
+        --
+        + InfoCount : int {read}
+        + WarningCount : int {read}
+        + ErrorCount : int {read}
+        + ValidEntries : int {read}
+        + InvalidEntries : int {read}
+        + TotalLines : int {read}
+        + Increment(entry : LogEntry) : void
+        + GetPercentage(level : string) : double
+        + ToString() : string
+    }
+}
+
+package "LogReader.Services" {
+    class LogFileService {
+        + ValidateFilePath(filePath : string, errorMessage : out string) : bool
+        + ReadLogFile(filePath : string) : IEnumerable<LogEntry>
+    }
+
+    class LogFilterService {
+        - static ValidLevels : HashSet<string>
+        --
+        + FilterByLevel(entries : IEnumerable<LogEntry>, level : string) : IEnumerable<LogEntry>
+        + FilterByDateRange(entries : IEnumerable<LogEntry>, startDateTime : DateTime, endDateTime : DateTime) : IEnumerable<LogEntry>
+        + FilterByDateRange(entries : IEnumerable<LogEntry>, startDate : DateOnly, endDate : DateOnly) : IEnumerable<LogEntry>
+        + SearchByTerm(entries : IEnumerable<LogEntry>, term : string) : IEnumerable<LogEntry>
+    }
+}
+
+package "LogReader.Controllers" {
+    class LogController {
+        - _fileService : LogFileService
+        - _filterService : LogFilterService
+        - _view : ConsoleView
+        - _allEntries : IEnumerable<LogEntry>
+        - _statistics : LogStatistics
+        --
+        + LogController(fileService : LogFileService, filterService : LogFilterService, view : ConsoleView)
+        + Run() : void
+        - GetValidFilePath() : string
+        - LoadAndProcessFile(filePath : string) : bool
+        - CalculateStatistics(entries : IEnumerable<LogEntry>) : LogStatistics
+        - RunMainMenuLoop() : void
+        - RunLevelFilterLoop() : void
+        - RunSearchByTerm() : void
+        - RunFilterByDateRange() : void
+        - ShowPercentages() : void
+        - SaveSummaryToFile() : void
+    }
+}
+
+package "LogReader.Views" {
+    class ConsoleView {
+        - MainMenuOptions : string {static}
+        - LevelFilterOptions : string {static}
+        --
+        + ShowWelcome() : void
+        + PromptFilePath() : string
+        + ShowError(message : string) : void
+        + ShowInfo(message : string) : void
+        + ShowSuccess(message : string) : void
+        + ShowSummary(stats : LogStatistics) : void
+        + ShowMainMenu() : void
+        + ShowLevelFilterMenu() : void
+        + PromptMainMenuChoice() : string
+        + PromptLevelFilterChoice() : string
+        + MapLevelChoiceToLevel(choice : string) : string?
+        + PromptSearchTerm() : string?
+        + PromptDateRange() : (DateTime, DateTime)?
+        + PromptSavePath() : string?
+        + ShowEntries(entries : IEnumerable<LogEntry>, filterLabel : string) : void
+        + ShowPercentages(stats : LogStatistics) : void
+        - WriteColoredEntry(entry : LogEntry) : void
+        + WaitForEnter() : void
+        + ShowGoodbye() : void
+    }
+}
+
+package "LogReader" {
+    class Program {
+        + static Main(args : string[]) : int
+    }
+}
+
+' ===================== RELATIONSHIPS =====================
+
+' Controller uses Services and View (Composition)
+LogController *-- LogFileService : uses
+LogController *-- LogFilterService : uses
+LogController *-- ConsoleView : uses
+
+' Controller manages Models
+LogController *-- LogEntry : manages (collection)
+LogController *-- LogStatistics : creates/uses
+
+' Statistics aggregates LogEntry
+LogStatistics --> LogEntry : aggregates
+
+' Services use Models
+LogFileService ..> LogEntry : creates via TryParse
+LogFilterService ..> LogEntry : filters
+
+' View displays Models
+ConsoleView ..> LogEntry : displays
+ConsoleView ..> LogStatistics : displays
+
+' Program creates everything (Manual DI)
+Program ..> LogController : creates
+Program ..> LogFileService : creates
+Program ..> LogFilterService : creates
+Program ..> ConsoleView : creates
+
+' External dependencies
+LogEntry ..> System.Text.RegularExpressions.Regex : uses
+LogStatistics ..> System.Collections.Generic.Dictionary : uses
+LogFileService ..> System.IO.File : uses
+LogFilterService ..> System.Linq.Enumerable : uses
+ConsoleView ..> System.Console : uses
+
+@enduml
